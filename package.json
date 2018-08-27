@@ -1,0 +1,22 @@
+{
+  "name": "ff",
+  "version": "1.0.0",
+  "description": "scrapes ESPN for fantasy football info",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "chart.js": "^2.7.2",
+    "cheerio": "^1.0.0-rc.2",
+    "express": "^4.16.3",
+    "lodash": "^4.17.10",
+    "path": "^0.12.7",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Calvin LeVally",
+  "license": "ISC"
+}

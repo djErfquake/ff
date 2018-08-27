@@ -8,10 +8,17 @@ const bodyParser = require('body-parser');
 const rp = require('request-promise');
 const cheerio = require('cheerio');
 
+const _ = require('lodash');
+
 
 // variables
 const NUM_OF_TEAMS = 14;
 const NUM_OF_GAMES = 13;
+
+let createScoreboardUrl = function(weekNumber) { return 'http://games.espn.com/ffl/scoreboard?leagueId=1081893&matchupPeriodId=' + weekNumber; };
+
+let createMatchupUrl = function(teamNumber, weekNumber) { return 'http://games.espn.com/ffl/boxscorequick?leagueId=1081893&seasonId=2017&teamId=' + teamNumber + '&scoringPeriodId=' + weekNumber; };
+
 let teams = [];
 
 
@@ -31,10 +38,11 @@ app.listen(3000, () => console.log('Listening on port 3000'));
 
 
 // load first scoreboard in order to init teams
+let gameIndex = 1;
 
 // setup the request options
 let options = {
-  uri: 'http://games.espn.com/ffl/scoreboard?leagueId=1081893&matchupPeriodId=1',
+  uri: createScoreboardUrl(1),
   transform: function (body) {
     return cheerio.load(body);
   }
@@ -44,6 +52,8 @@ let options = {
 // make the request
 rp(options)
   .then(($) => {
+
+    console.log("getting results for week 1");
 
     for (let i = 0; i < NUM_OF_TEAMS / 2; i++) {
       let matchup = $($('.matchup')[i]);
@@ -73,15 +83,16 @@ rp(options)
       };
 
       // fixtures
-      newTeam0.games.push({ "opponent": newTeam1, "score": score0, "opponentScore": score1 });
-      newTeam1.games.push({ "opponent": newTeam0, "score": score1, "opponentScore": score0 });
+      newTeam0.games[gameIndex - 1] = { "opponent": filterAbbrev(abbrev1), "score": score0, "opponentScore": score1 };
+      newTeam1.games[gameIndex - 1] = { "opponent": filterAbbrev(abbrev0), "score": score1, "opponentScore": score0 };
 
-      teams.push(newTeam0);
-      teams.push(newTeam1);
+      teams[newTeam0.abbrev] = newTeam0;
+      teams[newTeam1.abbrev] = newTeam1;
     }
 
-    gameIndex = 2;
-    updateNextGame();
+    gameIndex = 1;
+    updateNextGameForPlayer(teams['CAL']);
+
   })
   .catch((err) => {
   console.log(err);
@@ -96,19 +107,17 @@ rp(options)
 
 // FUNCTIONS
 
-
-
-// loop through scoreboards
-let gameIndex = 2;
-let updateNextGame = function() {
+let updateNextGameForPlayer = function(team) {
 
     // setup the request options
     let options = {
-      uri: 'http://games.espn.com/ffl/scoreboard?leagueId=1081893&matchupPeriodId=' + gameIndex,
-      transform: function (body) {
-        return cheerio.load(body);
-      }
+      uri: createMatchupUrl(team.espnIndex, gameIndex),
+      transform: function (body) { return cheerio.load(body); }
     };
+
+
+    // create players if needed
+    if (!_.has(team, 'players')) { team.players = []; }
 
 
     // make the request
@@ -116,48 +125,46 @@ let updateNextGame = function() {
       .then(($) => {
 
         console.log("got response for " + gameIndex);
+        let playerInfo = $($('.playerTableTable')[0]);
+        let numOfPlayers = $(playerInfo.find($('.pncPlayerRow'))).length;
 
-        for (let i = 0; i < NUM_OF_TEAMS / 2; i++) {
-          let matchup = $($('.matchup')[i]);
+        for (let i = 0; i < numOfPlayers; i++) {
 
-          // first team
-          let abbrev0 = $(matchup.find('.abbrev')[0]).text();
-          let score0 = parseInt($(matchup.find('.score')[0]).text());
-          let team0 = getTeamFromAbbrev(filterAbbrev(abbrev0));
+          let totalScore = parseInt($($('.totalScore')[0]).text());
+          team.games[gameIndex - 1].score = totalScore;
 
-          // second team
-          let abbrev1 = $(matchup.find('.abbrev')[1]).text();
-          let score1 = parseInt($(matchup.find('.score')[1]).text());
-          let team1 = getTeamFromAbbrev(filterAbbrev(abbrev1));
+          let playerRow = $($(playerInfo.find($('.pncPlayerRow')))[i]);
+          let playerName = playerRow.find('.playertablePlayerName').find('a').text();
+          let playerScore =  parseInt(playerRow.find('.appliedPoints').text());
 
-          // fixtures
-          team0.games.push({ "opponent": team1, "score": score0, "opponentScore": score1 });
-          team1.games.push({ "opponent": team0, "score": score1, "opponentScore": score0 });
+          let player = team.players[playerName];
+          if (player == undefined) {
+            let playerPosition = playerRow.find('.playerSlot').text();
+
+            team.players[playerName] = {
+              position: playerPosition,
+              name: playerName,
+              scores: []
+            };
+          }
+
+          team.players[playerName].scores[gameIndex - 1] = playerScore == NaN ? 0 : playerScore;
         }
 
-        gameIndex++;
-
-        if (gameIndex > NUM_OF_GAMES) { console.log("teams", teams); }
-        else { updateNextGame(); }
+        console.log("team", team);
       })
       .catch((err) => {
       console.log(err);
     });
-
-};
-
-
-
-let getTeamFromAbbrev = function(abbrev) {
-  for (let i = 0; i < teams.length; i++) {
-    if (teams[i].abbrev == abbrev) { return teams[i]; }
-  }
 };
 
 
 let filterAbbrev = function(abbrevText) {
-  return abbrevText.substring(1, abbrevText.length - 1)
-}
+  return abbrevText.substring(1, abbrevText.length - 1);
+};
+
+
+
 
 
 
