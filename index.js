@@ -19,7 +19,7 @@ let createScoreboardUrl = function(weekNumber) { return 'http://games.espn.com/f
 
 let createMatchupUrl = function(teamNumber, weekNumber) { return 'http://games.espn.com/ffl/boxscorequick?leagueId=1081893&seasonId=2017&teamId=' + teamNumber + '&scoringPeriodId=' + weekNumber; };
 
-let teams = [];
+let teams = {};
 
 
 // routing and starting express server
@@ -30,7 +30,7 @@ let leagueRouting = require(path.join(__dirname, 'routes', 'routes.js'));
 
 app.use('/ff/league', leagueRouting);
 app.get('/test', (req, res) => { res.status(200).sendFile(path.resolve(__dirname, '', 'public', 'test.html')) });
-app.get('/ff/teams.json', (req, res) => { res.status(200).send(teams)});
+app.get('/ff/teams.json', (req, res) => { res.status(200).send(JSON.stringify(teams))});
 
 app.listen(3000, () => console.log('Listening on port 3000'));
 
@@ -38,7 +38,7 @@ app.listen(3000, () => console.log('Listening on port 3000'));
 
 
 // load first scoreboard in order to init teams
-let gameIndex = 1;
+let gamesScraped = [];
 
 // setup the request options
 let options = {
@@ -83,15 +83,30 @@ rp(options)
       };
 
       // fixtures
-      newTeam0.games[gameIndex - 1] = { "opponent": filterAbbrev(abbrev1), "score": score0, "opponentScore": score1 };
-      newTeam1.games[gameIndex - 1] = { "opponent": filterAbbrev(abbrev0), "score": score1, "opponentScore": score0 };
+      newTeam0.games[0] = { "score": score0, "opponent": filterAbbrev(abbrev1), "opponentScore": score1 };
+      newTeam1.games[0] = { "score": score1, "opponent": filterAbbrev(abbrev0), "opponentScore": score0 };
 
       teams[newTeam0.abbrev] = newTeam0;
       teams[newTeam1.abbrev] = newTeam1;
     }
 
-    gameIndex = 1;
+
+
+    // everyone
+    Object.keys(teams).map(function(key) {
+      let team = teams[key];
+      gamesScraped[team.abbrev] = 0;
+      team.players = [];
+      updateNextGameForPlayer(team);
+    });
+
+
+    /*
+    // just calvin
+    gamesScraped['CAL'] = 0;
+    teams['CAL'].players = [];
     updateNextGameForPlayer(teams['CAL']);
+    */
 
   })
   .catch((err) => {
@@ -109,29 +124,35 @@ rp(options)
 
 let updateNextGameForPlayer = function(team) {
 
+    let gameIndex = gamesScraped[team.abbrev] + 1;
+    console.log(team.abbrev + ": week " + gameIndex.toString());
+
     // setup the request options
     let options = {
       uri: createMatchupUrl(team.espnIndex, gameIndex),
       transform: function (body) { return cheerio.load(body); }
     };
 
-
-    // create players if needed
-    if (!_.has(team, 'players')) { team.players = []; }
-
-
     // make the request
     rp(options)
       .then(($) => {
 
-        console.log("got response for " + gameIndex);
         let playerInfo = $($('.playerTableTable')[0]);
         let numOfPlayers = $(playerInfo.find($('.pncPlayerRow'))).length;
 
         for (let i = 0; i < numOfPlayers; i++) {
 
           let totalScore = parseInt($($('.totalScore')[0]).text());
-          team.games[gameIndex - 1].score = totalScore;
+          if (team.games[gameIndex - 1] == undefined) {
+            let opponentNameText = $($('.playerTableBgRowHead')[1]).find('td').text();
+            let opponent = opponentNameText.substring(0, opponentNameText.length - 10);
+            let opponentScore = parseInt($($('.totalScore')[1]).text());
+
+            team.games[gameIndex - 1] = { "score": totalScore, "opponent": getTeamFromName(opponent), "opponentScore": opponentScore };
+          }
+          else {
+            team.games[gameIndex - 1].score = totalScore;
+          }
 
           let playerRow = $($(playerInfo.find($('.pncPlayerRow')))[i]);
           let playerName = playerRow.find('.playertablePlayerName').find('a').text();
@@ -151,7 +172,13 @@ let updateNextGameForPlayer = function(team) {
           team.players[playerName].scores[gameIndex - 1] = playerScore == NaN ? 0 : playerScore;
         }
 
-        console.log("team", team);
+        gamesScraped[team.abbrev]++;
+        if (gamesScraped[team.abbrev] < NUM_OF_GAMES) {
+          updateNextGameForPlayer(team);
+        } else {
+          console.log("team", team);
+        }
+
       })
       .catch((err) => {
       console.log(err);
@@ -163,7 +190,13 @@ let filterAbbrev = function(abbrevText) {
   return abbrevText.substring(1, abbrevText.length - 1);
 };
 
-
+let getTeamFromName = function(teamName) {
+  Object.keys(teams).map(function(key) {
+    let team = teams[key];
+    if (team.name == teamName) { return team; }
+  });
+  return undefined;
+}
 
 
 
