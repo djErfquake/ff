@@ -13,13 +13,13 @@ const _ = require('lodash');
 
 // variables
 const NUM_OF_TEAMS = 14;
-const NUM_OF_GAMES = 13;
+const NUM_OF_WEEKS = 13;
+const ESPN_LEAGUE_ID = "1081893";
+const YEAR = "2017";
 
-let createScoreboardUrl = function(weekNumber) { return 'http://games.espn.com/ffl/scoreboard?leagueId=1081893&matchupPeriodId=' + weekNumber; };
+let createScoreboardUrl = function(weekNumber) { return 'http://games.espn.com/ffl/scoreboard?leagueId=' + ESPN_LEAGUE_ID + '&matchupPeriodId=' + weekNumber + '&seasonId=' + YEAR; };
 
-let createMatchupUrl = function(teamNumber, weekNumber) { return 'http://games.espn.com/ffl/boxscorequick?leagueId=1081893&seasonId=2017&teamId=' + teamNumber + '&scoringPeriodId=' + weekNumber; };
-
-let teams = {};
+let createMatchupUrl = function(teamNumber, weekNumber) { return 'http://games.espn.com/ffl/boxscorequick?leagueId=' + ESPN_LEAGUE_ID + '&seasonId=' + YEAR + '&teamId=' + teamNumber + '&scoringPeriodId=' + weekNumber; };
 
 
 // routing and starting express server
@@ -38,7 +38,10 @@ app.listen(3000, () => console.log('Listening on port 3000'));
 
 
 // load first scoreboard in order to init teams
+let teams = {};
+let trophies = {};
 let gamesScraped = [];
+let teamDoneCount = 0;
 
 // setup the request options
 let options = {
@@ -125,7 +128,7 @@ rp(options)
 let updateNextGameForPlayer = function(team) {
 
     let gameIndex = gamesScraped[team.abbrev] + 1;
-    console.log(team.abbrev + ": week " + gameIndex.toString());
+    //console.log(team.abbrev + ": week " + gameIndex.toString());
 
     // setup the request options
     let options = {
@@ -147,6 +150,7 @@ let updateNextGameForPlayer = function(team) {
             let opponentNameText = $($('.playerTableBgRowHead')[1]).find('td').text();
             let opponent = opponentNameText.substring(0, opponentNameText.length - 10);
             let opponentScore = parseInt($($('.totalScore')[1]).text());
+            opponentScore = (opponentScore === NaN) ? 0 : opponentScore;
 
             team.games[gameIndex - 1] = { "score": totalScore, "opponent": getTeamFromName(opponent), "opponentScore": opponentScore };
           }
@@ -157,6 +161,7 @@ let updateNextGameForPlayer = function(team) {
           let playerRow = $($(playerInfo.find($('.pncPlayerRow')))[i]);
           let playerName = playerRow.find('.playertablePlayerName').find('a').text();
           let playerScore =  parseInt(playerRow.find('.appliedPoints').text());
+          playerScore = (playerScore === NaN) ? 0 : playerScore;
 
           let player = team.players[playerName];
           if (player == undefined) {
@@ -165,18 +170,24 @@ let updateNextGameForPlayer = function(team) {
             team.players[playerName] = {
               position: playerPosition,
               name: playerName,
-              scores: []
+              scores: [],
+              totalPoints: 0,
             };
           }
 
-          team.players[playerName].scores[gameIndex - 1] = playerScore == NaN ? 0 : playerScore;
+          team.players[playerName].scores[gameIndex - 1] = playerScore;
+          team.players[playerName].totalPoints += playerScore;
         }
 
         gamesScraped[team.abbrev]++;
-        if (gamesScraped[team.abbrev] < NUM_OF_GAMES) {
+        if (gamesScraped[team.abbrev] < NUM_OF_WEEKS) {
           updateNextGameForPlayer(team);
         } else {
-          console.log("team", team);
+          teamDoneCount++;
+          if (teamDoneCount >= NUM_OF_TEAMS) {
+            updateTrophies();
+          }
+
         }
 
       })
@@ -186,9 +197,149 @@ let updateNextGameForPlayer = function(team) {
 };
 
 
+
+let updateTrophies = function() {
+
+  let trophies = [];
+
+  let trophySassyNicCage = {
+    name: "Sassy Nicolas Cage",
+    description: "weekly award to the team that scores the most points",
+    best: { points: 0 },
+    weeks: []
+  };
+
+  let trophyLeprechaun = {
+    name: "Leprecahun with Backwards Knee Joints",
+    description: "weekly award to the team with the player that scores the most points",
+    best: { points: 0 },
+    weeks: []
+  };
+
+  let trophyUnlucky = {
+    name: "Lucky Rabbit's Foot",
+    description: "weekly award to the player that scored the most and still lost",
+    best: { points: 0 },
+    weeks: []
+  };
+
+  let trophyLucky = {
+    name: "Lucky Duck",
+    description: "weekly award to the player that scored the least and still won",
+    best: { points: 999 },
+    weeks: []
+  };
+
+
+
+
+  // loop through weeks
+  for (let i = 0; i < NUM_OF_WEEKS; i++) {
+
+    let bestTeam = {
+      points: 0
+    };
+
+    let bestPlayer = {
+      points: 0
+      // TODO: add pick number
+    };
+
+    let unluckiestTeam = {
+      points: 0
+    };
+
+    let luckiestTeam = {
+      points: 999
+    }
+
+
+    // loop through teams
+    Object.keys(teams).map(function(teamKey) {
+
+      let team = teams[teamKey];
+
+      // best team
+      if (team.games[i].score > bestTeam.points) {
+        bestTeam.team = team.abbrev;
+        bestTeam.points = team.games[i].score;
+        bestTeam.opponent = team.opponent;
+      }
+
+      // unluckiest team
+      if (team.games[i].score < team.games[i].opponentScore && team.games[i].score > unluckiestTeam.points) {
+        unluckiestTeam.team = team.abbrev;
+        unluckiestTeam.points = team.games[i].score;
+        unluckiestTeam.opponent = team.games[i].opponent;
+        unluckiestTeam.opponentScore = team.games[i].opponentScore;
+      }
+
+      // luckiest team
+      if (team.games[i].score > team.games[i].opponentScore && team.games[i].score < luckiestTeam.points) {
+        luckiestTeam.team = team.abbrev;
+        luckiestTeam.points = team.games[i].score;
+        luckiestTeam.opponent = team.games[i].opponent;
+        luckiestTeam.opponentScore = team.games[i].opponentScore;
+      }
+
+      // loop through players on each team
+      Object.keys(team.players).map(function(playerKey) {
+
+        let player = team.players[playerKey];
+        if (player.scores[i] != undefined && player.scores[i] > bestPlayer.points) {
+          bestPlayer.team = team.abbrev;
+          bestPlayer.points = player.scores[i];
+          bestPlayer.player = player.name;
+          bestPlayer.opponent = team.opponent;
+        }
+
+      });
+
+    });
+
+    trophySassyNicCage.weeks[i] = bestTeam;
+    if (bestTeam.points > trophySassyNicCage.best.points) {
+      trophySassyNicCage.best = bestTeam;
+      trophySassyNicCage.best.week = i;
+    }
+
+    trophyLeprechaun.weeks[i] = bestPlayer;
+    if (bestPlayer.points > trophyLeprechaun.best.points) {
+      trophyLeprechaun.best = bestPlayer;
+      trophyLeprechaun.best.week = i;
+    }
+
+    trophyUnlucky.weeks[i] = unluckiestTeam;
+    if (unluckiestTeam.points > trophyUnlucky.best.points) {
+      trophyUnlucky.best = unluckiestTeam;
+      trophyUnlucky.best.week = i;
+    }
+
+    trophyLucky.weeks[i] = luckiestTeam;
+    if (luckiestTeam.points < trophyLucky.best.points) {
+      trophyLucky.best = luckiestTeam;
+      trophyLucky.best.week = i;
+    }
+  }
+
+  trophies.push(trophySassyNicCage);
+  trophies.push(trophyLeprechaun);
+  trophies.push(trophyUnlucky);
+  trophies.push(trophyLucky);
+
+  console.log("Trophies", trophies);
+  console.log("Teams", teams);
+};
+
+
+
+
+// HELPER METHODS
+
 let filterAbbrev = function(abbrevText) {
   return abbrevText.substring(1, abbrevText.length - 1);
 };
+
 
 let getTeamFromName = function(teamName) {
   Object.keys(teams).map(function(key) {
