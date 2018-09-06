@@ -56,7 +56,7 @@ let options = {
 rp(options)
   .then(($) => {
 
-    console.log("getting results for week 1");
+    console.log("Loading Team Info...");
 
     for (let i = 0; i < NUM_OF_TEAMS / 2; i++) {
       let matchup = $($('.matchup')[i]);
@@ -143,21 +143,26 @@ let updateNextGameForPlayer = function(team) {
         let playerInfo = $($('.playerTableTable')[0]);
         let numOfPlayers = $(playerInfo.find($('.pncPlayerRow'))).length;
 
+
+        let totalScore = parseInt($($('.totalScore')[0]).text());
+        let opponentNameText = $($('.playerTableBgRowHead')[1]).find('td').text();
+        let opponent = opponentNameText.substring(0, opponentNameText.length - 10);
+        opponent = (opponent == "") ? "BYE" : getTeamFromName(opponent);
+        let opponentScore = parseInt($($('.totalScore')[1]).text());
+        opponentScore = (opponentScore === NaN) ? 0 : opponentScore;
+
+        if (team.games[gameIndex - 1] == undefined) {
+          team.games[gameIndex - 1] = { "score": totalScore, "opponent": opponent, "opponentScore": opponentScore };
+        }
+        else {
+          team.games[gameIndex - 1].score = totalScore;
+          team.games[gameIndex - 1].opponent = opponent;
+          team.games[gameIndex - 1].opponentScore = opponentScore;
+        }
+
+
         for (let i = 0; i < numOfPlayers; i++) {
-
-          let totalScore = parseInt($($('.totalScore')[0]).text());
-          if (team.games[gameIndex - 1] == undefined) {
-            let opponentNameText = $($('.playerTableBgRowHead')[1]).find('td').text();
-            let opponent = opponentNameText.substring(0, opponentNameText.length - 10);
-            let opponentScore = parseInt($($('.totalScore')[1]).text());
-            opponentScore = (opponentScore === NaN) ? 0 : opponentScore;
-
-            team.games[gameIndex - 1] = { "score": totalScore, "opponent": getTeamFromName(opponent), "opponentScore": opponentScore };
-          }
-          else {
-            team.games[gameIndex - 1].score = totalScore;
-          }
-
+          
           let playerRow = $($(playerInfo.find($('.pncPlayerRow')))[i]);
           let playerName = playerRow.find('.playertablePlayerName').find('a').text();
           let playerScore =  parseInt(playerRow.find('.appliedPoints').text());
