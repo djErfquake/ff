@@ -10,12 +10,14 @@ const cheerio = require('cheerio');
 
 const _ = require('lodash');
 
+const cliProgress = require('cli-progress');
+
 
 // variables
 const NUM_OF_TEAMS = 14;
 const NUM_OF_WEEKS = 13;
 const ESPN_LEAGUE_ID = "1081893";
-const YEAR = "2017";
+const YEAR = "2018";
 
 let createScoreboardUrl = function(weekNumber) { return 'http://games.espn.com/ffl/scoreboard?leagueId=' + ESPN_LEAGUE_ID + '&matchupPeriodId=' + weekNumber + '&seasonId=' + YEAR; };
 
@@ -35,6 +37,11 @@ app.get('/ff/teams.json', (req, res) => { res.status(200).send(JSON.stringify(te
 app.listen(3000, () => console.log('Listening on port 3000'));
 
 
+
+// ui
+const progressBar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
+let progressValue = 0;
+progressBar.start(NUM_OF_TEAMS * NUM_OF_WEEKS, 0);
 
 
 // load first scoreboard in order to init teams
@@ -143,13 +150,23 @@ let updateNextGameForPlayer = function(team) {
         let playerInfo = $($('.playerTableTable')[0]);
         let numOfPlayers = $(playerInfo.find($('.pncPlayerRow'))).length;
 
-
         let totalScore = parseInt($($('.totalScore')[0]).text());
         let opponentNameText = $($('.playerTableBgRowHead')[1]).find('td').text();
         let opponent = opponentNameText.substring(0, opponentNameText.length - 10);
-        opponent = (opponent == "") ? "BYE" : getTeamFromName(opponent);
+        if (opponent == "") {
+          opponent = "BYE";
+        } else {
+          let opponentTeam = getTeamFromName(opponent);
+          if (opponentTeam == undefined) {
+            console.log("ERROR: " + opponentNameText + " is undefined.");
+          }
+
+          opponent = opponentTeam.abbrev;
+        }
         let opponentScore = parseInt($($('.totalScore')[1]).text());
         opponentScore = (opponentScore === NaN) ? 0 : opponentScore;
+
+
 
         if (team.games[gameIndex - 1] == undefined) {
           team.games[gameIndex - 1] = { "score": totalScore, "opponent": opponent, "opponentScore": opponentScore };
@@ -162,7 +179,7 @@ let updateNextGameForPlayer = function(team) {
 
 
         for (let i = 0; i < numOfPlayers; i++) {
-          
+
           let playerRow = $($(playerInfo.find($('.pncPlayerRow')))[i]);
           let playerName = playerRow.find('.playertablePlayerName').find('a').text();
           let playerScore =  parseInt(playerRow.find('.appliedPoints').text());
@@ -183,6 +200,9 @@ let updateNextGameForPlayer = function(team) {
           team.players[playerName].scores[gameIndex - 1] = playerScore;
           team.players[playerName].totalPoints += playerScore;
         }
+
+        progressValue++;
+        progressBar.update(progressValue);
 
         gamesScraped[team.abbrev]++;
         if (gamesScraped[team.abbrev] < NUM_OF_WEEKS) {
@@ -332,6 +352,8 @@ let updateTrophies = function() {
   trophies.push(trophyUnlucky);
   trophies.push(trophyLucky);
 
+  progressBar.stop();
+
   console.log("Trophies", trophies);
   console.log("Teams", teams);
 };
@@ -347,11 +369,12 @@ let filterAbbrev = function(abbrevText) {
 
 
 let getTeamFromName = function(teamName) {
+  let foundTeam = undefined;
   Object.keys(teams).map(function(key) {
     let team = teams[key];
-    if (team.name == teamName) { return team; }
+    if (team.name == teamName) { foundTeam = team; }
   });
-  return undefined;
+  return foundTeam;
 }
 
 
