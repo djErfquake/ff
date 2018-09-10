@@ -106,7 +106,7 @@ rp(options)
     Object.keys(teams).map(function(key) {
       let team = teams[key];
       gamesScraped[team.abbrev] = 0;
-      team.players = [];
+      team.players = {};
       updateNextGameForPlayer(team);
     });
 

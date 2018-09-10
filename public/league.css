@@ -1,0 +1,27 @@
+.players-info {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+}
+
+.player-info {
+  width: 400px;
+  height: 400px;
+  background-color: #f5f5f5;
+  margin: 20px;
+}
+
+
+.player-chart  {
+  width: 180px;
+  height: 180px;
+}
+
+
+
+
+
+
+.chart {
+  width: 80%;
+}
