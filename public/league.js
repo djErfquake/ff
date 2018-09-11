@@ -1,7 +1,8 @@
+let currentGameWeek = 0;
+let totalGameWeeks = 13;
 
-const GAME_INDEX = 0;
-
-let teams = [];
+let teams;
+let trophies = [];
 $.getJSON('teams.json', function(data) {
   teams = data;
   console.log("teams", teams);
@@ -10,6 +11,29 @@ $.getJSON('teams.json', function(data) {
   // loop through teams
   Object.keys(teams).map(function(teamKey, teamIndex) {
     let team = teams[teamKey];
+
+    // do once
+    if (teamIndex == 0) {
+      totalGameWeeks = team.games.length;
+      for (let i = 0; i < totalGameWeeks; i++) {
+        if (team.games[i].score == 0 && team.games[i].opponentScore == 0) {
+          currentGameWeek = i - 1;
+
+          // set season progress
+          let seasonPercentage = (currentGameWeek + 1 / totalGameWeeks) * 100;
+          console.log("seasonPercentage", seasonPercentage);
+          $('.season-progress').css('width', seasonPercentage.toString() + "%");
+
+          break;
+        }
+      }
+    }
+
+
+    // set scores
+    $('.player-score-' + teamIndex).html(team.games[currentGameWeek].score.toString());
+
+
     drawTeamGraph(team, teamIndex);
   });
 });
@@ -28,8 +52,8 @@ let drawTeamGraph = function(team, teamIndex) {
     //console.log("Player: " + playerKey);
     let player = team.players[playerKey];
     data.labels.push(player.name + "\n(" + player.position + ")");
-    if (player.scores[GAME_INDEX] <= 0) { data.datasets[0].data.push(0); }
-    else { data.datasets[0].data.push(player.scores[GAME_INDEX]); }
+    if (player.scores[currentGameWeek] <= 0) { data.datasets[0].data.push(0); }
+    else { data.datasets[0].data.push(player.scores[currentGameWeek]); }
     data.datasets[0].backgroundColor.push(getColorFromPosition(player.position));
   });
 
@@ -40,7 +64,11 @@ let drawTeamGraph = function(team, teamIndex) {
     type: 'doughnut',
     data: data,
     options: {
-      cutoutPercentage: 50,
+      legend: {
+        display: false,
+        position: 'bottom'
+      },
+      cutoutPercentage: 60, // 50
       rotation: 0.2,
       animation: {
         animateRotate: true,
@@ -114,9 +142,9 @@ let getColorFromPosition = function(position) {
   else if (position == "RB") { color = 'rgba(87, 95, 207, 1.0)'; } // periwinkle
   else if (position == "WR") { color = 'rgba(11, 232, 129, 1.0)'; } // green
   else if (position == "FLEX") { color = 'rgba(52, 231, 228, 1.0)'; } // turquoise
-  else if (position == "TE") { color = 'rgba(255, 221, 89, 1.0)'; } // yellow
+  else if (position == "TE") { color = 'rgba(15, 188, 249, 1.0)'; } // yellow
   else if (position == "D/ST") { color = 'rgba(30, 39, 46, 1.0)'; } // black
-  else if (position == "K") { color = 'rgba(15, 188, 249, 1.0)'; } // blue
+  else if (position == "K") { color = 'rgba(255, 221, 89, 1.0)'; } // blue
   else if (position == "P") { color = 'rgba(255, 192, 72, 1.0)'; } // orange
   return color;
 };
@@ -125,3 +153,26 @@ let getColorFromPosition = function(position) {
 let generateTeamName = function(team) {
   return team.name + "\n(" + team.person + ")";
 };
+
+
+
+
+
+
+
+
+
+
+
+$.getJSON('trophies.json', function(data) {
+  trophies = data;
+  console.log("trophies", trophies);
+
+  $('.trophy-most-points-weekly-winner').html(trophies[0].weeks[0].team);
+  $('.trophy-most-points-weekly-summary').html(trophies[0].description);
+  $('.trophy-most-points-weekly-score').html(trophies[0].weeks[0].points);
+
+  $('.trophy-most-points-overall-winner').html(trophies[0].best.team);
+  $('.trophy-most-points-overall-summary').html(trophies[0].description);
+  $('.trophy-most-points-overall-score').html(trophies[0].best.points);
+});

@@ -33,6 +33,7 @@ let leagueRouting = require(path.join(__dirname, 'routes', 'routes.js'));
 app.use('/ff/league', leagueRouting);
 app.get('/test', (req, res) => { res.status(200).sendFile(path.resolve(__dirname, '', 'public', 'test.html')) });
 app.get('/ff/teams.json', (req, res) => { res.status(200).send(JSON.stringify(teams))});
+app.get('/ff/trophies.json', (req, res) => { res.status(200).send(JSON.stringify(trophies))});
 
 app.listen(3000, () => console.log('Listening on port 3000'));
 
