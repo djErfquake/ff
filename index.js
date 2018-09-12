@@ -30,21 +30,21 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static('public'));
 let leagueRouting = require(path.join(__dirname, 'routes', 'routes.js'));
 
-app.use('/ff/league', leagueRouting);
+//app.use('/ff/league', leagueRouting);
+app.use('/', leagueRouting);
 app.get('/test', (req, res) => { res.status(200).sendFile(path.resolve(__dirname, '', 'public', 'test.html')) });
-app.get('/ff/teams.json', (req, res) => { res.status(200).send(JSON.stringify(teams))});
-app.get('/ff/trophies.json', (req, res) => { res.status(200).send(JSON.stringify(trophies))});
+app.get('/teams.json', (req, res) => { res.status(200).send(JSON.stringify(teams))});
+app.get('/trophies.json', (req, res) => { res.status(200).send(JSON.stringify(trophies))});
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log('Listening on port ' + port));
+app.listen(port);
+console.log('Listening on port ' + port);
 
 
 
 // ui
 const progressBar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let progressValue = 0;
-progressBar.start(NUM_OF_TEAMS * NUM_OF_WEEKS, 0);
-
 
 // load first scoreboard in order to init teams
 let teams = {};
@@ -66,6 +66,7 @@ rp(options)
   .then(($) => {
 
     console.log("Loading Team Info...");
+    progressBar.start(NUM_OF_TEAMS * NUM_OF_WEEKS, 0);
 
     for (let i = 0; i < NUM_OF_TEAMS / 2; i++) {
       let matchup = $($('.matchup')[i]);
@@ -356,8 +357,8 @@ let updateTrophies = function() {
 
   progressBar.stop();
 
-  console.log("Trophies", trophies);
-  console.log("Teams", teams);
+  //console.log("Trophies", trophies);
+  //console.log("Teams", teams);
 };
 
 
