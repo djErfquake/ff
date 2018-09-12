@@ -3,10 +3,12 @@ let totalGameWeeks = 13;
 
 let teams;
 let trophies = [];
+let matchups = [];
+
 $.getJSON('teams.json', function(data) {
   teams = data;
   console.log("teams", teams);
-  drawTeamScoresGraph();
+  //drawTeamScoresGraph();
 
   // loop through teams
   Object.keys(teams).map(function(teamKey, teamIndex) {
@@ -29,19 +31,41 @@ $.getJSON('teams.json', function(data) {
       }
     }
 
+    // get matchup info
+    let matchupAdded = false;
+    for (let i = 0; i < matchups.length; i++) {
+      for (let j = 0; j < matchups[i].players.length; j++) {
+        if (matchups[i].players[j].abbrev == team.abbrev) {
+          matchupAdded = true;
+          break;
+    }}}
 
-    // set scores
-    $('.player-score-' + teamIndex).html(team.games[currentGameWeek].score.toString());
-
-
-    drawTeamGraph(team, teamIndex);
+    if (!matchupAdded) {
+      matchups.push({
+        players: [getTeamFromAbbrev(team.abbrev), getTeamFromAbbrev(team.games[currentGameWeek].opponent)],
+        scores: [team.games[currentGameWeek].score, team.games[currentGameWeek].opponentScore]
+      })
+    }
   });
+
+  // do matchups
+  console.log("matchups before sort", matchups);
+  matchups.sort(function(a,b) {return (a.scores[0] + a.scores[1] < b.scores[0] + b.scores[1]) ? 1 : ((b.scores[0] + b.scores[1] < a.scores[0] + a.scores[1]) ? -1 : 0);} );
+  console.log("matchups after sort", matchups);
+  for (let i = 0; i < matchups.length; i++) {
+    drawTeamGraph(matchups[i].players[0], i * 2);
+    drawTeamGraph(matchups[i].players[1], (i * 2) + 1);
+  }
 });
 
 
-let drawTeamGraph = function(team, teamIndex) {
 
-  $('.player-name-' + teamIndex.toString()).html(generateTeamName(team));
+
+
+let drawTeamGraph = function(team, domIndex) {
+
+  $('.player-name-' + domIndex.toString()).html(generateTeamName(team));
+  $('.player-score-' + domIndex).html(team.games[currentGameWeek].score.toString());
 
   let data = {
     datasets: [{data:[], backgroundColor:[]}],
@@ -57,10 +81,10 @@ let drawTeamGraph = function(team, teamIndex) {
     data.datasets[0].backgroundColor.push(getColorFromPosition(player.position));
   });
 
-  let chartContext = '.player-chart-' + teamIndex.toString();
+  let chartContext = '.player-chart-' + domIndex.toString();
   //console.log("chartContext", chartContext);
   //console.log("chart info", data);
-  let doughnutChart = new Chart($('.player-chart-' + teamIndex.toString()), {
+  let doughnutChart = new Chart($('.player-chart-' + domIndex.toString()), {
     type: 'doughnut',
     data: data,
     options: {
@@ -151,10 +175,18 @@ let getColorFromPosition = function(position) {
 
 
 let generateTeamName = function(team) {
-  return team.name + "\n(" + team.person + ")";
+  return team.name + "<br>(" + team.person + ")";
 };
 
 
+let getTeamFromAbbrev = function(abbrev) {
+  let foundTeam = undefined;
+  Object.keys(teams).map(function(key) {
+    let team = teams[key];
+    if (team.abbrev == abbrev) { foundTeam = team; }
+  });
+  return foundTeam;
+}
 
 
 
@@ -162,8 +194,7 @@ let generateTeamName = function(team) {
 
 
 
-
-
+/*
 $.getJSON('trophies.json', function(data) {
   trophies = data;
   console.log("trophies", trophies);
@@ -176,3 +207,4 @@ $.getJSON('trophies.json', function(data) {
   $('.trophy-most-points-overall-summary').html(trophies[0].description);
   $('.trophy-most-points-overall-score').html(trophies[0].best.points);
 });
+*/

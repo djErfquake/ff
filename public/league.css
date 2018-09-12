@@ -8,6 +8,10 @@ body {
   color: #424242;
 }
 
+.section {
+  padding: 20px;
+}
+
 .row {
   align-self: center;
   width: 85%;
@@ -18,8 +22,30 @@ body {
 }
 
 
+/* SECTIONS */
+.section-trophies {
+  background-color: #fff;
+}
+
 
 /* PLAYER INFO */
+
+.matchup-card {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.matchup-side {
+  width: 35%;
+}
+
+.vs {
+  font-size: 50px;
+  font-weight: 600;
+  width: 5%;
+}
 
 
 .players-info {
