@@ -20,9 +20,10 @@ $.getJSON('teams.json', function(data) {
       for (let i = 0; i < totalGameWeeks; i++) {
         if (team.games[i].score == 0 && team.games[i].opponentScore == 0) {
           currentGameWeek = i - 1;
+          console.log("currentGameWeek", currentGameWeek);
 
           // set season progress
-          let seasonPercentage = (currentGameWeek + 1 / totalGameWeeks) * 100;
+          let seasonPercentage = ((currentGameWeek + 1) / totalGameWeeks) * 100;
           console.log("seasonPercentage", seasonPercentage);
           $('.season-progress').css('width', seasonPercentage.toString() + "%");
 
@@ -49,9 +50,7 @@ $.getJSON('teams.json', function(data) {
   });
 
   // do matchups
-  console.log("matchups before sort", matchups);
   matchups.sort(function(a,b) {return (a.scores[0] + a.scores[1] < b.scores[0] + b.scores[1]) ? 1 : ((b.scores[0] + b.scores[1] < a.scores[0] + a.scores[1]) ? -1 : 0);} );
-  console.log("matchups after sort", matchups);
   for (let i = 0; i < matchups.length; i++) {
     drawTeamGraph(matchups[i].players[0], i * 2);
     drawTeamGraph(matchups[i].players[1], (i * 2) + 1);
@@ -96,6 +95,43 @@ let drawTeamGraph = function(team, domIndex) {
       rotation: 0.2,
       animation: {
         animateRotate: true,
+        animateScale: true
+      }
+    }
+  });
+};
+
+
+
+let drawTrophyGraph = function(domName, info1, info2, info3) {
+
+  $("." + domName + "-name").html(info1.player.name + "<br>" + generateTeamName(getTeamFromAbbrev(info1.team)));
+  let data = {
+    datasets: [{data:[], backgroundColor:[]}],
+    labels: []
+  };
+
+  data.labels.push(info1.player.name);
+  data.labels.push(info2.player.name);
+  data.labels.push(info3.player.name);
+
+  data.datasets[0].data.push(info1.points);
+  data.datasets[0].data.push(info2.points);
+  data.datasets[0].data.push(info3.points);
+
+  data.datasets[0].backgroundColor.push(getColorFromPosition(info1.player.position));
+  data.datasets[0].backgroundColor.push(getColorFromPosition(info2.player.position));
+  data.datasets[0].backgroundColor.push(getColorFromPosition(info3.player.position));
+
+  let barChart = new Chart($("." + domName + "-chart"), {
+    type: 'bar',
+    data: data,
+    options: {
+      legend: {
+        display: false,
+        position: 'bottom'
+      },
+      animation: {
         animateScale: true
       }
     }
@@ -194,17 +230,10 @@ let getTeamFromAbbrev = function(abbrev) {
 
 
 
-/*
+
 $.getJSON('trophies.json', function(data) {
   trophies = data;
   console.log("trophies", trophies);
 
-  $('.trophy-most-points-weekly-winner').html(trophies[0].weeks[0].team);
-  $('.trophy-most-points-weekly-summary').html(trophies[0].description);
-  $('.trophy-most-points-weekly-score').html(trophies[0].weeks[0].points);
-
-  $('.trophy-most-points-overall-winner').html(trophies[0].best.team);
-  $('.trophy-most-points-overall-summary').html(trophies[0].description);
-  $('.trophy-most-points-overall-score').html(trophies[0].best.points);
+  drawTrophyGraph("best-player-week", trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1])
 });
-*/

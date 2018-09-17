@@ -228,8 +228,6 @@ let updateNextGameForPlayer = function(team) {
 
 let updateTrophies = function() {
 
-  let trophies = [];
-
   let trophySassyNicCage = {
     name: "Sassy Nicolas Cage",
     description: "weekly award to the team that scores the most points",
@@ -317,7 +315,7 @@ let updateTrophies = function() {
         if (player.scores[i] != undefined && player.scores[i] > bestPlayer.points) {
           bestPlayer.team = team.abbrev;
           bestPlayer.points = player.scores[i];
-          bestPlayer.player = player.name;
+          bestPlayer.player = player;
           bestPlayer.opponent = team.opponent;
         }
 
@@ -350,10 +348,10 @@ let updateTrophies = function() {
     }
   }
 
-  trophies.push(trophySassyNicCage);
-  trophies.push(trophyLeprechaun);
-  trophies.push(trophyUnlucky);
-  trophies.push(trophyLucky);
+  trophies["best-team"] = trophySassyNicCage;
+  trophies["best-player"] = trophyLeprechaun;
+  trophies["luckiest-team"] = trophyLucky;
+  trophies["unluckiest-team"] = trophyUnlucky;
 
   progressBar.stop();
 
