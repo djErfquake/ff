@@ -125,7 +125,7 @@ let drawPlayerTrophyGraph = function(domName, info1) {
     labels: []
   };
 
-  $.getJSON('http://games.espn.com/ffl/api/v2/playerInfo?playerId=' + info1.player.espnIndex + '&leagueId=1081893', function(playerInfo) {
+  $.getJSON('https://games.espn.com/ffl/api/v2/playerInfo?playerId=' + info1.player.espnIndex + '&leagueId=1081893', function(playerInfo) {
     console.log("Best Player", playerInfo);
     let espnImageId = playerInfo.playerInfo.players[0].player.sportsId;
     let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + espnImageId + ".png&w=200&h=145";
@@ -164,7 +164,7 @@ let drawTeamTrophyGraph = function(domName, info1) {
     labels: []
   };
 
-  $.getJSON('http://games.espn.com/ffl/api/v2/teams?leagueId=1081893', function(teamsInfo) {
+  $.getJSON('https://games.espn.com/ffl/api/v2/teams?leagueId=1081893', function(teamsInfo) {
     let team = undefined;
     for (let i = 0; i < teamsInfo.teams.length; i++) {
       if (teamsInfo.teams[i].teamAbbrev == info1.team) { team = teamsInfo.teams[i]; break; }
