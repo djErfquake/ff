@@ -63,7 +63,11 @@ $.getJSON('teams.json', function(data) {
     trophies = data;
     console.log("trophies", trophies);
 
-    drawTrophyGraph("best-player-week", trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1])
+    drawPlayerTrophyGraph("best-player-week", trophies["best-player"]["weeks"][currentGameWeek]);
+    drawPlayerTrophyGraph("best-player-season", trophies["best-player"]["best"]);
+
+    drawTeamTrophyGraph("best-team-week", trophies["best-team"]["weeks"][currentGameWeek]);
+    drawTeamTrophyGraph("best-team-season", trophies["best-team"]["best"]);
   });
 });
 
@@ -113,7 +117,7 @@ let drawTeamGraph = function(team, domIndex) {
 
 
 
-let drawTrophyGraph = function(domName, info1, info2, info3) {
+let drawPlayerTrophyGraph = function(domName, info1) {
 
   //$("." + domName + "-name").html(info1.player.name + "<br>" + generateTeamName(getTeamFromAbbrev(info1.team)));
   let data = {
@@ -131,16 +135,10 @@ let drawTrophyGraph = function(domName, info1, info2, info3) {
 
 
   data.labels.push(info1.player.name);
-  data.labels.push(info2.player.name);
-  data.labels.push(info3.player.name);
 
   data.datasets[0].data.push(info1.points);
-  data.datasets[0].data.push(info2.points);
-  data.datasets[0].data.push(info3.points);
 
   data.datasets[0].backgroundColor.push(getColorFromPosition(info1.player.position));
-  data.datasets[0].backgroundColor.push(getColorFromPosition(info2.player.position));
-  data.datasets[0].backgroundColor.push(getColorFromPosition(info3.player.position));
 
   let barChart = new Chart($("." + domName + "-chart"), {
     type: 'bar',
@@ -154,6 +152,50 @@ let drawTrophyGraph = function(domName, info1, info2, info3) {
         animateScale: true
       }
     }
+  });
+
+};
+
+
+let drawTeamTrophyGraph = function(domName, info1) {
+
+  let data = {
+    datasets: [{data:[], backgroundColor:[]}],
+    labels: []
+  };
+
+  $.getJSON('http://games.espn.com/ffl/api/v2/teams?leagueId=1081893', function(teamsInfo) {
+    let team = undefined;
+    for (let i = 0; i < teamsInfo.teams.length; i++) {
+      if (teamsInfo.teams[i].teamAbbrev == info1.team) { team = teamsInfo.teams[i]; break; }
+    }
+    console.log("Best Team", team, info1);
+
+    $("." + domName + "-picture").css('background-image', "url('" + team.logoUrl + "')");
+
+    let teamName = team.teamLocation + " " + team.teamNickname;
+    $("." + domName + "-name").html(teamName);
+
+
+    data.labels.push(teamName);
+
+    data.datasets[0].data.push(info1.points);
+
+    data.datasets[0].backgroundColor.push('rgba(72, 84, 96, 1.0)');
+
+    let barChart = new Chart($("." + domName + "-chart"), {
+      type: 'bar',
+      data: data,
+      options: {
+        legend: {
+          display: false,
+          position: 'bottom'
+        },
+        animation: {
+          animateScale: true
+        }
+      }
+    });
   });
 
 };
