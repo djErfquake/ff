@@ -47,6 +47,7 @@ $.getJSON('teams.json', function(data) {
         scores: [team.games[currentGameWeek].score, team.games[currentGameWeek].opponentScore]
       })
     }
+
   });
 
   // do matchups
@@ -55,6 +56,15 @@ $.getJSON('teams.json', function(data) {
     drawTeamGraph(matchups[i].players[0], i * 2);
     drawTeamGraph(matchups[i].players[1], (i * 2) + 1);
   }
+
+
+  // LOAD TROPHY INFO
+  $.getJSON('trophies.json', function(data) {
+    trophies = data;
+    console.log("trophies", trophies);
+
+    drawTrophyGraph("best-player-week", trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1])
+  });
 });
 
 
@@ -105,11 +115,20 @@ let drawTeamGraph = function(team, domIndex) {
 
 let drawTrophyGraph = function(domName, info1, info2, info3) {
 
-  $("." + domName + "-name").html(info1.player.name + "<br>" + generateTeamName(getTeamFromAbbrev(info1.team)));
+  //$("." + domName + "-name").html(info1.player.name + "<br>" + generateTeamName(getTeamFromAbbrev(info1.team)));
   let data = {
     datasets: [{data:[], backgroundColor:[]}],
     labels: []
   };
+
+  $.getJSON('http://games.espn.com/ffl/api/v2/playerInfo?playerId=' + info1.player.espnIndex + '&leagueId=1081893', function(playerInfo) {
+    console.log("Best Player", playerInfo);
+    let espnImageId = playerInfo.playerInfo.players[0].player.sportsId;
+    let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + espnImageId + ".png&w=200&h=145";
+    $("." + domName + "-picture").css('background-image', "url('" + bestPlayerImageUrl + "')");
+    $("." + domName + "-name").html(playerInfo.playerInfo.players[0].player.firstName + " " + playerInfo.playerInfo.players[0].player.lastName + "<br>" + playerInfo.playerInfo.players[0].team.teamLocation + " " + playerInfo.playerInfo.players[0].team.teamNickname);
+  });
+
 
   data.labels.push(info1.player.name);
   data.labels.push(info2.player.name);
@@ -136,6 +155,7 @@ let drawTrophyGraph = function(domName, info1, info2, info3) {
       }
     }
   });
+
 };
 
 
@@ -223,17 +243,3 @@ let getTeamFromAbbrev = function(abbrev) {
   });
   return foundTeam;
 }
-
-
-
-
-
-
-
-
-$.getJSON('trophies.json', function(data) {
-  trophies = data;
-  console.log("trophies", trophies);
-
-  drawTrophyGraph("best-player-week", trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1], trophies["best-player"]["weeks"][1])
-});

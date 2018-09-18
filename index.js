@@ -185,6 +185,8 @@ let updateNextGameForPlayer = function(team) {
 
           let playerRow = $($(playerInfo.find($('.pncPlayerRow')))[i]);
           let playerName = playerRow.find('.playertablePlayerName').find('a').text();
+          let playerRowId = playerRow.attr('id');
+          let playerEspnIndex = playerRowId.substring(4, playerRowId.length);
           let playerScore =  parseInt(playerRow.find('.appliedPoints').text());
           playerScore = (playerScore === NaN) ? 0 : playerScore;
 
@@ -197,6 +199,7 @@ let updateNextGameForPlayer = function(team) {
               name: playerName,
               scores: [],
               totalPoints: 0,
+              espnIndex: playerEspnIndex
             };
           }
 
