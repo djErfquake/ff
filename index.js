@@ -52,6 +52,7 @@ let trophies = {};
 let gamesScraped = [];
 let teamDoneCount = 0;
 
+/*
 // setup the request options
 let options = {
   uri: createScoreboardUrl(1),
@@ -113,21 +114,13 @@ rp(options)
       updateNextGameForPlayer(team);
     });
 
-
-    /*
-    // just calvin
-    gamesScraped['CAL'] = 0;
-    teams['CAL'].players = [];
-    updateNextGameForPlayer(teams['CAL']);
-    */
-
   })
   .catch((err) => {
   console.log(err);
 });
 
 
-
+*/
 
 
 
