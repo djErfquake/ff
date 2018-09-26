@@ -4,9 +4,6 @@ const YEAR = "2018";
 let teams;
 let players = [];
 
-let trophies = [];
-let matchups = [];
-
 let totalGameWeeks = 13;
 let currentGameWeek = 0;
 
@@ -15,9 +12,10 @@ $.getJSON('https://games.espn.com/ffl/api/v2/teams?leagueId=' + ESPN_LEAGUE_ID, 
 
   // sort teams by number of points scored
   teams = teamsData.teams;
-  teams.sort(function(a,b) {return (a.record.pointsFor < b.record.pointsFor) ? 1 : ((b.record.pointsFor < a.record.pointsFor) ? -1 : 0);} );
 
   $.getJSON('https://games.espn.com/ffl/api/v2/scoreboard?leagueId=' + ESPN_LEAGUE_ID, function(scoreboardData) {
+
+    console.log("scoreboardData", scoreboardData);
 
     // get current game week
     totalGameWeeks = teams[0].scheduleItems.length;
@@ -48,23 +46,24 @@ $.getJSON('https://games.espn.com/ffl/api/v2/teams?leagueId=' + ESPN_LEAGUE_ID, 
     }
 
 
-
   });
 });
 
 
 let analyzeData = function() {
 
-  let weeklyPlayer1 = { points: 0, player: {player: { playerId: 0} } };
-  let weeklyPlayer2 = { points: 0, player: {player: { playerId: 0} } };
-  let weeklyPlayer3 = { points: 0, player: {player: { playerId: 0} } };
-  let seasonPlayer1 = { points: 0, player: {player: { playerId: 0} } };
-  let seasonPlayer2 = { points: 0, player: {player: { playerId: 0} } };
-  let seasonPlayer3 = { points: 0, player: {player: { playerId: 0} } };
-
   for (let teamIndex = 0; teamIndex < teams.length; teamIndex++) {
     for (let gameWeekIndex = 0; gameWeekIndex < currentGameWeek; gameWeekIndex++) {
       let boxscore = teams[teamIndex].boxscores[gameWeekIndex];
+
+      if (teams[teamIndex].scheduleItems[gameWeekIndex].matchups[0].awayTeam.teamAbbrev == teams[teamIndex].teamAbbrev) {
+        teams[teamIndex].scheduleItems[gameWeekIndex].score = teams[teamIndex].scheduleItems[gameWeekIndex].matchups[0].awayTeamScores[0];
+        teams[teamIndex].scheduleItems[gameWeekIndex].opponentScore = teams[teamIndex].scheduleItems[gameWeekIndex].matchups[0].homeTeamScores[0];
+      } else {
+        teams[teamIndex].scheduleItems[gameWeekIndex].score = teams[teamIndex].scheduleItems[gameWeekIndex].matchups[0].homeTeamScores[0];
+        teams[teamIndex].scheduleItems[gameWeekIndex].opponentScore = teams[teamIndex].scheduleItems[gameWeekIndex].matchups[0].awayTeamScores[0];
+      }
+
 
       for (let matchupTeamIndex = 0; matchupTeamIndex < 2; matchupTeamIndex++) {
 
@@ -72,48 +71,23 @@ let analyzeData = function() {
         for (let playerIndex = 0; playerIndex < boxscorePlayers.length; playerIndex++) {
 
           if (boxscorePlayers[playerIndex].currentPeriodRealStats != undefined) {
+
+            let playerId = boxscorePlayers[playerIndex].player.playerId;
             let playerScore = boxscorePlayers[playerIndex].currentPeriodRealStats.appliedStatTotal;
-            //console.log("Checking ", boxscorePlayers[playerIndex].player.firstName + " " + boxscorePlayers[playerIndex].player.lastName, boxscorePlayers[playerIndex].currentPeriodRealStats.appliedStatTotal, boxscorePlayers[playerIndex]);
+            if (playerScore != undefined) {
+              if (players[playerId] == undefined) {
+                players[playerId] = boxscorePlayers[playerIndex];
+                players[playerId].totalScore = 0;
+                players[playerId].games = [];
+                players[playerId].owner = boxscore.teams[matchupTeamIndex].teamId;
+              }
 
-            // TODO: Add to each players total score (keep a dictionary of all players)
+              if (players[playerId].games[gameWeekIndex] ==  undefined) {
+                players[playerId].games[gameWeekIndex] = playerScore;
+                players[playerId].totalScore += playerScore;
+              }
 
-
-            if (gameWeekIndex == currentGameWeek - 1) {
-              // weekly player
-              if (playerScore > weeklyPlayer1.points &&
-                weeklyPlayer1.player.player.playerId != boxscorePlayers[playerIndex].player.playerId) {
-                  weeklyPlayer1.points = playerScore; weeklyPlayer1.player = boxscorePlayers[playerIndex]; weeklyPlayer1.teamId = boxscore.teamId;
-                }
-              else if (playerScore > weeklyPlayer2.points &&
-                weeklyPlayer1.player.player.playerId != boxscorePlayers[playerIndex].player.playerId &&
-                weeklyPlayer2.player.player.playerId != boxscorePlayers[playerIndex].player.playerId) {
-                  weeklyPlayer2.points = playerScore; weeklyPlayer2.player = boxscorePlayers[playerIndex]; weeklyPlayer2.teamId = boxscore.teamId;
-                }
-              else if (playerScore > weeklyPlayer3.points &&
-                weeklyPlayer1.player.player.playerId != boxscorePlayers[playerIndex].player.playerId &&
-                weeklyPlayer2.player.player.playerId != boxscorePlayers[playerIndex].player.playerId &&
-                weeklyPlayer3.player.player.playerId != boxscorePlayers[playerIndex].player.playerId) {
-                  weeklyPlayer3.points = playerScore; weeklyPlayer3.player = boxscorePlayers[playerIndex]; weeklyPlayer3.teamId = boxscore.teamId;
-                }
-
-                /*
-              // season player
-              if (playerScore > seasonPlayer1.points &&
-                seasonPlayer1.player.player.playerId != boxscorePlayers[playerIndex].player.playerId) {
-                  seasonPlayer1.points = playerScore; seasonPlayer1.player = boxscorePlayers[playerIndex]; seasonPlayer1.teamId = boxscore.teamId;
-                }
-              else if (playerScore > seasonPlayer2.points &&
-                seasonPlayer1.player.player.playerId != boxscorePlayers[playerIndex].player.playerId &&
-                seasonPlayer2.player.player.playerId != boxscorePlayers[playerIndex].player.playerId) {
-                  seasonPlayer2.points = playerScore; seasonPlayer2.player = boxscorePlayers[playerIndex]; seasonPlayer2.teamId = boxscore.teamId;
-                }
-              else if (playerScore > seasonPlayer3.points &&
-                seasonPlayer1.player.player.playerId != boxscorePlayers[playerIndex].player.playerId &&
-                seasonPlayer2.player.player.playerId != boxscorePlayers[playerIndex].player.playerId &&
-                seasonPlayer3.player.player.playerId != boxscorePlayers[playerIndex].player.playerId) {
-                  seasonPlayer3.points = playerScore; seasonPlayer3.player = boxscorePlayers[playerIndex]; seasonPlayer3.teamId = boxscore.teamId;
-                }
-                */
+              //console.log("Checking ", boxscorePlayers[playerIndex].player.firstName + " " + boxscorePlayers[playerIndex].player.lastName, boxscorePlayers[playerIndex].currentPeriodRealStats.appliedStatTotal, boxscorePlayers[playerIndex]);
             }
           }
         }
@@ -121,43 +95,60 @@ let analyzeData = function() {
     }
   }
 
+  // sort players by number of points scored this week
+  let weekPlayers = copy(players);
+  weekPlayers.sort(function(a,b) {return (a.games[currentGameWeek - 1] < b.games[currentGameWeek - 1]) ? 1 : ((b.games[currentGameWeek - 1] < a.games[currentGameWeek - 1]) ? -1 : 0);} );
 
-  drawWeeklyPlayerTrophyGraph(weeklyPlayer1, weeklyPlayer2, weeklyPlayer3);
+  //sort players by number of points score over the whole season
+  players.sort(function(a,b) {return (a.totalScore < b.totalScore) ? 1 : ((b.totalScore < a.totalScore) ? -1 : 0);} );
 
+  // sort teams by number of points scored this week
+  let weekTeams = copy(teams);
+  weekTeams.sort(function(a,b) {return (a.scheduleItems[currentGameWeek - 1].score < b.scheduleItems[currentGameWeek - 1].score) ? 1 : ((b.scheduleItems[currentGameWeek - 1].score < a.scheduleItems[currentGameWeek - 1].score) ? -1 : 0);} );
+  console.log("best teams this week", weekTeams);
+
+  // sort teams by number of points score over the whole season
+  teams.sort(function(a,b) {return (a.record.pointsFor < b.record.pointsFor) ? 1 : ((b.record.pointsFor < a.record.pointsFor) ? -1 : 0);} );
+  console.log("best teams this season", teams);
+
+  // drag graphs
+  drawWeeklyPlayerTrophyGraph(weekPlayers[0], weekPlayers[1], weekPlayers[2]);
+  drawSeasonPlayerTrophyGraph(players[0], players[1], players[2]);
+  drawWeeklyTeamTrophyGraph(weekTeams[0], weekTeams[1], weekTeams[2]);
   drawSeasonTeamTrophyGraph(teams[0], teams[1], teams[2]);
 
-
-  console.log("teams", teams);
+  $.getJSON('https://games.espn.com/ffl/api/v2/scoreboard?leagueId=' + ESPN_LEAGUE_ID + '&matchupPeriodId=' + currentGameWeek, function(scoreboardData) {
+    console.log("scoreboardData", scoreboardData);
+  });
 };
 
 
 
+let drawMatchupInfo = function(team, domIndex) {
 
-let drawWeeklyPlayerTrophyGraph = function(player1, player2, player3) {
-
-  console.log("player 1", player1);
+  //console.log("player 1", player1);
   //console.log("player 2", player2);
   //console.log("player 3", player3);
 
   // best player
-  let bestPlayerName = generatePlayerName(player1.player.player);
-  let bestPlayerId = player1.player.player.sportsId;
+  let bestPlayerName = generatePlayerName(player1.player);
+  let bestPlayerId = player1.player.sportsId;
   let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=145";
-  let bestPlayerTeam = getTeamFromTeamId(player1.teamId);
+  let bestPlayerTeam = getTeamFromTeamId(player1.owner);
   $('.best-player-week-picture').css('background-image', "url('" + bestPlayerImageUrl + "')");
   $('.best-player-week-name').html(bestPlayerName + "<br>" + generateTeamName(bestPlayerTeam));
 
   // draw graph
   let data = { datasets: [{data:[], backgroundColor:[]}], labels: [] };
   data.labels.push(bestPlayerName);
-  data.datasets[0].data.push(player1.points);
-  data.datasets[0].backgroundColor.push(getColorFromPosition(player1.player.player.eligibleSlotCategoryIds[0]));
-  data.labels.push(generatePlayerName(player2.player.player));
-  data.datasets[0].data.push(player2.points);
-  data.datasets[0].backgroundColor.push(getColorFromPosition(player2.player.player.eligibleSlotCategoryIds[0]));
-  data.labels.push(generatePlayerName(player3.player.player));
-  data.datasets[0].data.push(player3.points);
-  data.datasets[0].backgroundColor.push(getColorFromPosition(player3.player.player.eligibleSlotCategoryIds[0]));
+  data.datasets[0].data.push(player1.games[currentGameWeek - 1]);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player1.player.eligibleSlotCategoryIds[0]));
+  data.labels.push(generatePlayerName(player2.player));
+  data.datasets[0].data.push(player2.games[currentGameWeek - 1]);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player2.player.eligibleSlotCategoryIds[0]));
+  data.labels.push(generatePlayerName(player3.player));
+  data.datasets[0].data.push(player3.games[currentGameWeek - 1]);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player3.player.eligibleSlotCategoryIds[0]));
   let barChart = new Chart($('.best-player-week-chart'), {
     type: 'bar',
     data: data,
@@ -173,13 +164,163 @@ let drawWeeklyPlayerTrophyGraph = function(player1, player2, player3) {
         yAxes: [{
           ticks: {
             suggestedMin: 0,
-            suggestedMax: player1.points + 3
+            suggestedMax: player1.games[currentGameWeek - 1] + 3
           }
         }]
       }
     }
   });
 
+
+};
+
+
+
+
+let drawWeeklyPlayerTrophyGraph = function(player1, player2, player3) {
+
+  //console.log("player 1", player1);
+  //console.log("player 2", player2);
+  //console.log("player 3", player3);
+
+  // best player
+  let bestPlayerName = generatePlayerName(player1.player);
+  let bestPlayerId = player1.player.sportsId;
+  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=145";
+  let bestPlayerTeam = getTeamFromTeamId(player1.owner);
+  $('.best-player-week-picture').css('background-image', "url('" + bestPlayerImageUrl + "')");
+  $('.best-player-week-name').html(bestPlayerName + "<br>" + generateTeamName(bestPlayerTeam));
+
+  // draw graph
+  let data = { datasets: [{data:[], backgroundColor:[]}], labels: [] };
+  data.labels.push(bestPlayerName);
+  data.datasets[0].data.push(player1.games[currentGameWeek - 1]);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player1.player.eligibleSlotCategoryIds[0]));
+  data.labels.push(generatePlayerName(player2.player));
+  data.datasets[0].data.push(player2.games[currentGameWeek - 1]);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player2.player.eligibleSlotCategoryIds[0]));
+  data.labels.push(generatePlayerName(player3.player));
+  data.datasets[0].data.push(player3.games[currentGameWeek - 1]);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player3.player.eligibleSlotCategoryIds[0]));
+  let barChart = new Chart($('.best-player-week-chart'), {
+    type: 'bar',
+    data: data,
+    options: {
+      legend: {
+        display: false,
+        position: 'bottom'
+      },
+      animation: {
+        animateScale: true
+      },
+      scales: {
+        yAxes: [{
+          ticks: {
+            suggestedMin: 0,
+            suggestedMax: player1.games[currentGameWeek - 1] + 3
+          }
+        }]
+      }
+    }
+  });
+
+
+};
+
+
+let drawSeasonPlayerTrophyGraph = function(player1, player2, player3) {
+
+  console.log("player 1", player1);
+  console.log("player 2", player2);
+  console.log("player 3", player3);
+
+  // best player
+  let bestPlayerName = generatePlayerName(player1.player);
+  let bestPlayerId = player1.player.sportsId;
+  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=145";
+  let bestPlayerTeam = getTeamFromTeamId(player1.owner);
+  $('.best-player-season-picture').css('background-image', "url('" + bestPlayerImageUrl + "')");
+  $('.best-player-season-name').html(bestPlayerName + "<br>" + generateTeamName(bestPlayerTeam));
+
+  // draw graph
+  let data = { datasets: [{data:[], backgroundColor:[]}], labels: [] };
+  console.log("chart data", data);
+  data.labels.push(bestPlayerName);
+  data.datasets[0].data.push(player1.totalScore);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player1.player.eligibleSlotCategoryIds[0]));
+  data.labels.push(generatePlayerName(player2.player));
+  data.datasets[0].data.push(player2.totalScore);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player2.player.eligibleSlotCategoryIds[0]));
+  data.labels.push(generatePlayerName(player3.player));
+  data.datasets[0].data.push(player3.totalScore);
+  data.datasets[0].backgroundColor.push(getColorFromPosition(player3.player.eligibleSlotCategoryIds[0]));
+  let barChart = new Chart($('.best-player-season-chart'), {
+    type: 'bar',
+    data: data,
+    options: {
+      legend: {
+        display: false,
+        position: 'bottom'
+      },
+      animation: {
+        animateScale: true
+      },
+      scales: {
+        yAxes: [{
+          ticks: {
+            suggestedMin: 0,
+            suggestedMax: player1.totalScore + 3
+          }
+        }]
+      }
+    }
+  });
+
+
+};
+
+
+
+
+let drawWeeklyTeamTrophyGraph = function(team1, team2, team3) {
+
+  // best team
+  let bestTeamName = generateTeamName(team1);
+  $('.best-team-week-picture').css('background-image', "url('" + team1.logoUrl + "')");
+  $('.best-team-week-name').html(bestTeamName);
+
+  // draw graph
+  let data = { datasets: [{data:[], backgroundColor:[]}], labels: [] };
+  data.labels.push(bestTeamName);
+  data.datasets[0].data.push(team1.scheduleItems[currentGameWeek - 1].score);
+  data.datasets[0].backgroundColor.push('rgba(30, 39, 46, 1.0)');
+  data.labels.push(generateTeamName(team2));
+  data.datasets[0].data.push(team2.scheduleItems[currentGameWeek - 1].score);
+  data.datasets[0].backgroundColor.push('rgba(30, 39, 46, 1.0)');
+  data.labels.push(generateTeamName(team3));
+  data.datasets[0].data.push(team3.scheduleItems[currentGameWeek - 1].score);
+  data.datasets[0].backgroundColor.push('rgba(30, 39, 46, 1.0)');
+  let barChart = new Chart($('.best-team-week-chart'), {
+    type: 'bar',
+    data: data,
+    options: {
+      legend: {
+        display: false,
+        position: 'bottom'
+      },
+      animation: {
+        animateScale: true
+      },
+      scales: {
+        yAxes: [{
+          ticks: {
+            suggestedMin: 0,
+            suggestedMax: team1.scheduleItems[currentGameWeek - 1].score + 3
+          }
+        }]
+      }
+    }
+  });
 
 };
 
@@ -229,6 +370,8 @@ let drawSeasonTeamTrophyGraph = function(team1, team2, team3) {
 
 
 
+
+let copy = function(o) { var output, v, key; output = Array.isArray(o) ? [] : {}; for (key in o) { v = o[key]; output[key] = (typeof v === "object") ? copy(v) : v; } return output; };
 
 
 let getTeamFromTeamId = function(teamId) {
