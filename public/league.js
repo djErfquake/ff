@@ -133,7 +133,7 @@ let drawMatchupInfo = function(team, domIndex) {
   // best player
   let bestPlayerName = generatePlayerName(player1.player);
   let bestPlayerId = player1.player.sportsId;
-  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=145";
+  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=200";
   let bestPlayerTeam = getTeamFromTeamId(player1.owner);
   $('.best-player-week-picture').css('background-image', "url('" + bestPlayerImageUrl + "')");
   $('.best-player-week-name').html(bestPlayerName + "<br>" + generateTeamName(bestPlayerTeam));
@@ -186,7 +186,7 @@ let drawWeeklyPlayerTrophyGraph = function(player1, player2, player3) {
   // best player
   let bestPlayerName = generatePlayerName(player1.player);
   let bestPlayerId = player1.player.sportsId;
-  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=145";
+  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=275&h=200";
   let bestPlayerTeam = getTeamFromTeamId(player1.owner);
   $('.best-player-week-picture').css('background-image', "url('" + bestPlayerImageUrl + "')");
   $('.best-player-week-name').html(bestPlayerName + "<br>" + generateTeamName(bestPlayerTeam));
@@ -237,7 +237,7 @@ let drawSeasonPlayerTrophyGraph = function(player1, player2, player3) {
   // best player
   let bestPlayerName = generatePlayerName(player1.player);
   let bestPlayerId = player1.player.sportsId;
-  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=200&h=145";
+  let bestPlayerImageUrl = "http://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/" + bestPlayerId + ".png&w=275&h=200";
   let bestPlayerTeam = getTeamFromTeamId(player1.owner);
   $('.best-player-season-picture').css('background-image', "url('" + bestPlayerImageUrl + "')");
   $('.best-player-season-name').html(bestPlayerName + "<br>" + generateTeamName(bestPlayerTeam));
@@ -384,7 +384,7 @@ let getTeamFromTeamId = function(teamId) {
 };
 
 let generateTeamName = function(team) {
-  return team.teamLocation + " " + team.teamNickname + " (" + team.teamAbbrev + ")";
+  return team.teamLocation + "\n" + team.teamNickname + "\n(" + team.teamAbbrev + ")";
 };
 
 let generatePlayerName = function(player) {
